@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { handleUpdate, normalizeMetricSamples } from '../src/handlers/update.js';
 import { UPDATE_MAX_BATCH_SAMPLES, UPDATE_MAX_REQUEST_BYTES } from '../src/utils/config.js';
+const SECRET = 'local-test-report-secret-at-least-32-characters';
 
 function createRequest(body, headers = {}) {
   return new Request('https://example.com/update', {
@@ -14,7 +15,7 @@ function createRequest(body, headers = {}) {
 test('handleUpdate rejects oversized payload before touching D1', async () => {
   let dbTouched = false;
   const env = {
-    API_SECRET: 'secret',
+    API_SECRET: SECRET,
     DB: {
       prepare() {
         dbTouched = true;
@@ -34,10 +35,10 @@ test('handleUpdate rejects oversized payload before touching D1', async () => {
   assert.equal(dbTouched, false);
 });
 
-test('handleUpdate without Content-Length skips the size guard', async () => {
+test('handleUpdate accepts a bounded body without Content-Length', async () => {
   let queriedId = '';
   const env = {
-    API_SECRET: 'secret',
+    API_SECRET: SECRET,
     DB: {
       prepare() {
         return {
@@ -51,7 +52,7 @@ test('handleUpdate without Content-Length skips the size guard', async () => {
   };
 
   const response = await handleUpdate(
-    createRequest(JSON.stringify({ id: 'payload-limit-test-server', secret: 'secret' })),
+    createRequest(JSON.stringify({ id: 'payload-limit-test-server', secret: SECRET })),
     env,
     { waitUntil() {} }
   );
@@ -61,6 +62,18 @@ test('handleUpdate without Content-Length skips the size guard', async () => {
   assert.equal(response.headers.get('Retry-After'), '300');
   assert.equal(queriedId, 'payload-limit-test-server');
 });
+
+for (const headers of [{}, { 'Content-Length': '2' }]) {
+  test(`handleUpdate rejects actual oversized bytes with headers ${JSON.stringify(headers)}`, async () => {
+    let dbTouched = false;
+    const env = { API_SECRET: SECRET, DB: { prepare() { dbTouched = true; throw new Error('Unexpected D1 access'); } } };
+    const response = await handleUpdate(createRequest(JSON.stringify({
+      id: 'oversized', secret: SECRET, padding: 'x'.repeat(UPDATE_MAX_REQUEST_BYTES)
+    }), headers), env, { waitUntil() {} });
+    assert.equal(response.status, 413);
+    assert.equal(dbTouched, false);
+  });
+}
 
 test('normalizeMetricSamples keeps only the latest samples before processing', () => {
   const samples = Array.from({ length: UPDATE_MAX_BATCH_SAMPLES + 200 }, (_, index) => ({

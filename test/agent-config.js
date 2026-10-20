@@ -158,14 +158,15 @@ clearSiteSettingsCache();
   const emptySettingsDb = createEmptySettingsDb();
   const defaultSettings = await loadSiteSettings(emptySettingsDb, { forceRefresh: true });
   assert.equal(defaultSettings.show_three_net_details, 'true');
-  assert.equal(defaultSettings.wss_report_enabled, 'true');
+  assert.equal(defaultSettings.is_public, 'false');
+  assert.equal(defaultSettings.wss_report_enabled, 'false');
   assert.deepEqual(defaultSettings.wss_report_hours, Array.from({ length: 24 }, (_, hour) => hour));
-  assert.equal(isWssReportEnabled(defaultSettings, new Date('2026-08-20T10:00:00Z')), true);
+  assert.equal(isWssReportEnabled(defaultSettings, new Date('2026-08-20T10:00:00Z')), false);
 
   clearSiteSettingsCache();
   const initializedSiteOptions = await saveSiteOptions(createEmptySettingsDb(), { servers_optimized: 'true' });
   assert.equal(initializedSiteOptions.show_three_net_details, 'true');
-  assert.equal(initializedSiteOptions.wss_report_enabled, 'true');
+  assert.equal(initializedSiteOptions.wss_report_enabled, 'false');
   assert.deepEqual(initializedSiteOptions.wss_report_hours, Array.from({ length: 24 }, (_, hour) => hour));
 }
 assert.equal(isWssReportEnabled(

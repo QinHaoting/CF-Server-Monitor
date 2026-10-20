@@ -11,7 +11,7 @@
     "build": "node scripts/build.js",
     "build:frontend": "node scripts/build.js",
     "build:github-page": "node scripts/build-github-page.js",
-    "test": "node --test test/admin-usage.test.js test/dashboard-latency-window.test.js test/frontend-admin-entry-url.test.js test/frontend-api-base.test.js test/frontend-live-socket.test.js test/latest-metrics-all.test.js test/latest-timestamps.test.js test/metrics-broadcaster-agent-config.test.js test/notification-language.test.js test/traffic-alert.test.js test/server-detail-cache.test.js test/update-payload-limit.test.js",
+    "test": "node --test test/admin-usage.test.js test/dashboard-latency-window.test.js test/frontend-admin-entry-url.test.js test/frontend-api-base.test.js test/frontend-live-socket.test.js test/latest-metrics-all.test.js test/latest-timestamps.test.js test/metrics-broadcaster-agent-config.test.js test/notification-language.test.js test/traffic-alert.test.js test/server-detail-cache.test.js test/update-payload-limit.test.js test/security.test.js",
     "test:all": "npm run test && npm run test:agent-config && npm run test:history-query",
     "test:agent-config": "node test/agent-config.js",
     "test:history-query": "node --test test/history-query.test.js",
@@ -31,16 +31,22 @@
     "fs-extra": "^11.3.5",
     "vite": "^6.0.0",
     "vite-plugin-mkcert": "^2.1.0",
-    "wrangler": "^4.0.0"
+    "wrangler": "4.120.0"
   },
   "dependencies": {
     "chart.js": "^4.4.0",
     "cloudflare-smtp": "^0.1.2",
     "leaflet": "^1.9.4",
-    "vue": "^3.4.0",
+    "vue": "3.5.42",
     "vue-router": "^4.4.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=24.0.0"
+  },
+  "overrides": {
+    "undici@7": "7.29.1",
+    "undici@8": "8.10.2",
+    "sharp": "0.35.5",
+    "source-map-js": "1.2.2"
   }
 }

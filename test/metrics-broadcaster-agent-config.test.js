@@ -26,7 +26,7 @@ function makeBroadcaster(webSockets = [], env = { DB: {} }) {
       },
       async put() {}
     }
-  }, env);
+  }, { API_SECRET: 'local-test-report-secret-at-least-32-characters', ...env });
 }
 
 function makeSettingsDb(settingsSource) {
@@ -113,7 +113,7 @@ function makeWebSocketUpgradeRequest(url, headers = {}) {
 
 function makeWebSocketEnv(settings, onFetch = null) {
   return {
-    API_SECRET: 'test-secret',
+    API_SECRET: 'local-test-report-secret-at-least-32-characters',
     DB: makeSettingsDb(settings),
     METRICS_BROADCASTER: {
       idFromName() {
@@ -515,7 +515,8 @@ test('WSS agent context asks the agent to retry when lookup throws before auth',
     authenticated: false,
     serverId: ''
   }, {
-    id: 'degraded-server-2'
+    id: 'degraded-server-2',
+    secret: 'local-test-report-secret-at-least-32-characters'
   });
 
   assert.equal(context, null);

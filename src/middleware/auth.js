@@ -1,6 +1,7 @@
 const ALGORITHM = { name: 'HMAC', hash: 'SHA-256' };
 import { verifyPasswordHash } from '../utils/common.js';
 import { isValidJwtSecret } from '../utils/settings.js';
+import { AppError } from '../utils/errors.js';
 
 export const AUTH_COOKIE_NAME = 'cfsm_auth';
 const TOKEN_QUERY_KEYS = ['token', 'auth_token', 'ws_token'];
@@ -69,8 +70,7 @@ function getJwtSecret(env, sys) {
     return sys.jwt_secret;
   }
 
-  const fallback = env.API_SECRET || 'default_jwt_secret_for_server_monitor';
-  return fallback.padEnd(32, 'x').substring(0, 64);
+  return null;
 }
 
 function getCookieValue(request, name) {
@@ -97,6 +97,7 @@ function extractBearerToken(request) {
 async function verifyToken(token, env, sys) {
   if (!token) return false;
   const secret = getJwtSecret(env, sys);
+  if (!secret) return false;
 
   try {
     const payload = await verifyJwt(token, secret);
@@ -115,6 +116,7 @@ export async function generateToken(env, sys) {
   };
 
   const secret = getJwtSecret(env, sys);
+  if (!secret) throw new AppError('Authentication is not configured', 503);
   return signJwt(payload, secret);
 }
 

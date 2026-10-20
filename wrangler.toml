@@ -1,10 +1,12 @@
-# Cloudflare Workers 配置，线上已由deploy.yml接管，这里仅供本地测试
+# Private deployment: Cloudflare Workers Builds uses secure-monitor, not the upstream sync branch.
 name = "cf-server-monitor"
 main = "src/index.js"
 compatibility_date = "2024-12-01"
 compatibility_flags = ["nodejs_compat"]
 
 keep_vars = true
+workers_dev = true
+preview_urls = false
 
 # 定时任务配置（UTC）
 # - 每分钟：执行离线节点、资源告警
@@ -19,7 +21,7 @@ binding = "ASSETS"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "server-monitor-db"
+database_name = "cf-server-monitor-db"
 
 # Durable Objects：实时指标广播中心
 # 注意：首次部署前需要执行 `wrangler durable-object create MetricsBroadcaster --class MetricsBroadcaster`

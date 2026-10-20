@@ -4,6 +4,7 @@ import {
   SITE_SETTINGS_CACHE_TTL_MS
 } from './config.js';
 import { normalizePct } from './traffic.js';
+import { AppError } from './errors.js';
 
 export const APPEARANCE_FIELDS = ['site_title', 'custom_bg', 'custom_bg_mobile', 'favicon', 'custom_head', 'custom_script', 'csp_static', 'csp_api', 'display_mode', 'preferred_theme', 'default_language', 'theme_options'];
 
@@ -73,12 +74,12 @@ const defaults = {
   preferred_theme: 'auto',
   default_language: 'auto',
   theme_options: {},
-  is_public: 'true',
+  is_public: 'false',
   show_price: 'true',
   show_expire: 'true',
   show_tf: 'true',
   show_three_net_details: 'true',
-  wss_report_enabled: 'true',
+  wss_report_enabled: 'false',
   wss_report_hours: [...ALL_WSS_REPORT_HOURS],
   frontend_ws_timeout_minutes: '0',
   long_history_points: String(DEFAULT_LONG_HISTORY_POINTS),
@@ -677,6 +678,7 @@ export async function loadSiteSettings(db, options = {}) {
     result.traffic_alert_threshold = normalizeTrafficAlertThreshold(result.traffic_alert_threshold);
   } catch (e) {
     console.error('加载站点设置失败:', e);
+    throw new AppError('Site settings unavailable', 503);
   }
 
   cachedSiteSettings = result;

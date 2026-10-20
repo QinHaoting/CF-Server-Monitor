@@ -14,6 +14,7 @@ import { AppError, createSuccessResponse, createUnauthorizedResponse, createBadR
 import { verifyTurnstileToken } from './utils/common.js';
 import { getCorsAllowedOrigins, createOptionsResponse, applyCors } from './utils/cors.js';
 import { getRemoteVersion } from './utils/version.js';
+import { isValidApiSecret } from './utils/security.js';
 import {
   HISTORY_ALL_QUERY_COLUMNS
 } from './utils/historyFields.js';
@@ -191,8 +192,8 @@ export default {
 
     const corsAllowedOrigins = getCorsAllowedOrigins(env);
     
-    if (!env.API_SECRET || env.API_SECRET.length === 0) {
-      const response = createBadRequestResponse('API_SECRET is required');
+    if (!isValidApiSecret(env.API_SECRET)) {
+      const response = createErrorResponse(new AppError('Service is not configured', 503), false);
       return applyCors(response, request, corsAllowedOrigins);
     }
     

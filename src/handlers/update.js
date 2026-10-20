@@ -7,7 +7,8 @@ import {
   mergeMetricsIntoServer,
   coerceNumericMetricFields
 } from '../utils/metrics.js';
-import { createErrorResponse, createUnauthorizedResponse, createBadRequestResponse } from '../utils/errors.js';
+import { AppError, createErrorResponse, createUnauthorizedResponse, createBadRequestResponse } from '../utils/errors.js';
+import { readLimitedJson, requireApiSecret } from '../utils/security.js';
 import { ensureServerOptimization } from '../database/indexOptimization.js';
 import { getResourceAlertConfig, getWssReportScheduleState, isWssReportConfigured, loadSiteSettings, normalizeBooleanSetting } from '../utils/settings.js';
 import { cacheLatestReportUpdate } from '../utils/latestReportCache.js';
@@ -81,13 +82,6 @@ export function normalizeAgentVersion(value) {
 
 function logUpdateBadRequest(reason, details = {}) {
   console.warn('[Update] 400 Bad Request:', reason, details);
-}
-
-function getDeclaredContentLength(request) {
-  const raw = request.headers.get('Content-Length');
-  if (!raw) return null;
-  const length = Number(raw);
-  return Number.isFinite(length) && length >= 0 ? length : null;
 }
 
 function createPayloadTooLargeResponse() {
@@ -560,18 +554,11 @@ function _ensureBatchFlush(env) {
 
 export async function handleUpdate(request, env, ctx) {
   try {
-    // 必须在 request.json() 之前：超大 body 的解析本身就可能耗尽 Worker CPU。
-    // 注意这是防呆而非硬上限：chunked 或缺少 Content-Length 的请求会跳过该检查。
-    const declaredLength = getDeclaredContentLength(request);
-    if (declaredLength !== null && declaredLength > UPDATE_MAX_REQUEST_BYTES) {
-      console.warn('[Update] 413 Payload too large:', {
-        content_length: declaredLength,
-        limit: UPDATE_MAX_REQUEST_BYTES
-      });
-      return createPayloadTooLargeResponse();
+    requireApiSecret(env);
+    const data = await readLimitedJson(request, UPDATE_MAX_REQUEST_BYTES);
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      return createBadRequestResponse('Invalid report');
     }
-
-    const data = await request.json();
     const { id, secret } = data;
 
     if (secret !== env.API_SECRET) {
@@ -706,6 +693,7 @@ export async function handleUpdate(request, env, ctx) {
       });
     }
   } catch (e) {
+    if (e instanceof AppError && e.code === 413) return createPayloadTooLargeResponse();
     return createErrorResponse(e);
   }
 }
@@ -771,6 +759,11 @@ export async function handleWebSocketUpgrade(request, env) {
 }
 
 export async function handleUpdateWebSocketUpgrade(request, env) {
+  try {
+    requireApiSecret(env);
+  } catch (error) {
+    return createErrorResponse(error, false);
+  }
   const settings = await loadSiteSettings(env.DB);
   if (!isWssReportConfigured(settings)) {
     return createAgentWssDisabledResponse();

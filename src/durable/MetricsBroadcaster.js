@@ -17,6 +17,7 @@ import { evaluateTrafficAlert } from '../services/notification.js';
 import { ensureServerOptimization } from '../database/indexOptimization.js';
 import { getServerDetail, clearServerDetailCache } from '../utils/cache.js';
 import { getWssReportScheduleState, loadSiteSettings } from '../utils/settings.js';
+import { isValidApiSecret } from '../utils/security.js';
 import {
   AGENT_CONFIG_MD5_HEADER,
   AGENT_CONFIG_LEGACY_SCHEMA_VERSION,
@@ -686,6 +687,10 @@ export class MetricsBroadcaster {
   }
 
   async _resolveAgentContext(ws, attachment, data) {
+    if (!isValidApiSecret(this.env.API_SECRET)) {
+      this._closeWsWithError(ws, 'Service unavailable', 503, { text: 'service_unavailable' }, WS_TRY_AGAIN_LATER, 'Service unavailable');
+      return null;
+    }
     const rawServerId = data.id ?? attachment.serverId;
     const serverId = typeof rawServerId === 'string' ? rawServerId.trim() : String(rawServerId || '').trim();
     if (!this._isValidServerId(serverId)) {
