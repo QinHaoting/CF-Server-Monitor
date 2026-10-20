@@ -24,8 +24,9 @@ hardening and local checks do not establish that a live deployment is protected.
    based Cloudflare Access application for the full production hostname, using
    an explicit individual email allowlist. Hostname based Access supports the
    dashboard's WebSocket connection. Do not use a blanket public bypass.
-2. Configure the more specific `/update` path for probe ingestion. Cloudflare
-   path matching can include descendants, so verify the exact Worker route:
+2. Configure the more specific `/update` path for probe ingestion, and a deny
+   application on `/update/*` so descendants do not inherit the bypass. Verify
+   the exact Worker route:
    only `POST /update` should ingest reports; all other paths must remain
    protected or return no private data. Probe WebSocket reporting stays off.
 3. Check the Worker has no additional routes, custom domains or accessible
